@@ -1,0 +1,15 @@
+    1  sudo sed -i 's|root .*|root /data/mephi-web;|' /etc/nginx/nginx.conf
+    2  systemctl restart nginx
+    3  curl http://localhost
+    4  curl 192.168.31.100
+    5  curl http://192.168.31.100
+    6  ss -tuln | grep :80
+    7  ip -4 a
+    8  hostname -I
+    9  curl http://192.168.31.201
+   10  nmcli con up enp0s3
+   11  hostname -I
+   12  curl http://192.168.31.100
+   13  curl http://localhost
+   14  mkdir -p ~/project
+   15  history > ~/project/project-history.txt
