@@ -1,3 +1,56 @@
+Конечно, моя ошибка в том, что я не прочитал задание до конца перед тем как приступить к выполнению, но мне кажется, что пункт о сохранении истории всё же лучше расположить вначале задания.
+В процессе выполнения работы я несколько раз перезапускал VM и переключал пользователей без сохранения истории, так что содержимое этого файла я попытаюсь восстановить по памяти. (только пронумерованные строки сохранены системой)
+
+nmcli con mod enp0s3 ipv4.addresses 192.168.31.100/24
+nmcli con mod enp0s3 ipv4.gateway 192.168.31.1
+nmcli con mod enp0s3 ipv4.dns 8.8.8.8
+nmcli con mod enp0s3 ipv4.method manual
+nmcli con up enp0s3
+hostnamectl set-hostname mephi-2026.domain.local
+
+ping -c 4 8.8.8.8 > /tmp/network_check.txt
+ping -c 4 192.168.1.1 >> /tmp/network_check.txt
+
+dnf install -y nginx tcpdump libcap-ng-utils
+dnf download tcpdump --destdir=/tmp
+rpm -ivh /tmp/tcpdump.rpm                     - тут было название пакета с версией
+
+lsblk
+fdisk /dev/sdb
+mkfs.ext4 -L MEPHI_DATA /dev/sdb1
+mkdir -p /data/mephi-web
+echo "LABEL=MEPHI_DATA /data/mephi-web ext4 defaults 0 2" >> /etc/fstab
+systemctl daemon-reload
+mount -a
+
+systemctl start nginx
+systemctl enable nginx
+journalctl -u nginx --since "5 minutes ago" > /tmp/nginx_recent_logs.txt
+
+useradd mephi-admin
+passwd mephi-admin
+groupadd mephi-devs
+usermod -aG mephi-devs mephi-admin
+chown -R mephi-admin:mephi-devs /data/mephi-web
+chmod 2775 /data/mephi-web
+
+getenforce
+setenforce 1
+sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
+semanage fcontext -a -t httpd_sys_content_t "/data/mephi-web(/.*)?"
+restorecon -Rv /data/mephi-web
+
+chmod u-s /usr/sbin/tcpdump
+setcap cap_net_raw,cap_net_admin+ep /usr/sbin/tcpdump
+
+echo "root" > /etc/ssh/denied_users
+cat /etc/pam.d/login
+sed -i '1i auth required pam_listfile.so item=user sense=deny file=/etc/ssh/denied_users onerr=succeed' /etc/pam.d/login
+sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+systemctl restart sshd
+
+echo "Hello from Student: 255994" > /data/mephi-web/index.html
+
     1  sudo sed -i 's|root .*|root /data/mephi-web;|' /etc/nginx/nginx.conf
     2  systemctl restart nginx
     3  curl http://localhost
